@@ -105,7 +105,7 @@ if (!fs.existsSync(publicDir)) {
   fs.mkdirSync(publicDir, { recursive: true });
 }
 
-[16, 48, 128].forEach(size => {
+[16, 48, 128, 300].forEach(size => {
   const png = createPNG(size, size, 29, 78, 216);
   const dest = path.join(publicDir, `icon-${size}.png`);
   fs.writeFileSync(dest, png);
