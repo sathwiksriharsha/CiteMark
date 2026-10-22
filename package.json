@@ -1,0 +1,37 @@
+{
+  "name": "citemark-gemini-notebook-exporter",
+  "version": "0.1.0",
+  "description": "Export complete Gemini Notebook research conversations with verified source attribution to Obsidian Markdown and Print/PDF.",
+  "type": "module",
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "compile": "wxt prepare",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "notebooklm",
+    "gemini-notebook",
+    "obsidian",
+    "markdown",
+    "citation-exporter",
+    "research-tools"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/chrome": "^0.0.280",
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^22.7.5",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.3",
+    "wxt": "^0.21.4"
+  },
+  "dependencies": {
+    "fflate": "^0.8.3"
+  }
+}

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CiteMark Exporter</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="popup-shell">
+    <!-- App Header -->
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-icon">📚</span>
+        <div>
+          <h1 class="brand-title">CiteMark</h1>
+          <p class="brand-subtitle">Gemini Notebook Exporter</p>
+        </div>
+      </div>
+      <span class="privacy-badge" title="All processing happens 100% locally on your device">🔒 100% Local</span>
+    </header>
+
+    <!-- State 1: Unsupported Host (Inactive) -->
+    <section id="state-unsupported" class="state-view hidden" aria-live="polite">
+      <div class="card warning-card">
+        <span class="state-icon">🌐</span>
+        <h2>Gemini Notebook Required</h2>
+        <p>CiteMark activates on active research notebooks.</p>
+        <a href="https://notebook.google.com" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-link">
+          Open notebook.google.com &rarr;
+        </a>
+      </div>
+    </section>
+
+    <!-- State 2: Scanning / Loading -->
+    <section id="state-scanning" class="state-view hidden" aria-live="polite">
+      <div class="card scanning-card">
+        <div class="spinner" role="status" aria-label="Scanning active notebook"></div>
+        <h2>Scanning Notebook...</h2>
+        <p class="scanning-status">Reconciling lazy-loaded messages and source records...</p>
+      </div>
+    </section>
+
+    <!-- State 3: Empty Notebook -->
+    <section id="state-empty" class="state-view hidden" aria-live="polite">
+      <div class="card empty-card">
+        <span class="state-icon">💬</span>
+        <h2 id="empty-title">No Conversation Yet</h2>
+        <p id="empty-message">This notebook does not have any inquiry turns yet. Ask Gemini Notebook a question first, then re-open CiteMark.</p>
+        <button id="btn-refresh-empty" class="btn btn-secondary">Check Again</button>
+        <button id="btn-force-empty" class="btn btn-primary" style="margin-top: 8px;">🔍 Deep Scan / Force Extract</button>
+      </div>
+    </section>
+
+    <!-- State 4: Ready to Export -->
+    <section id="state-ready" class="state-view hidden" aria-live="polite">
+      <div class="notebook-summary">
+        <h2 id="summary-title" class="notebook-title">Research Synthesis</h2>
+        <div class="metrics-row">
+          <span class="metric-pill" id="pill-turns"><strong>0</strong> Turns</span>
+          <span class="metric-pill" id="pill-sources"><strong>0</strong> Sources</span>
+          <span class="metric-pill" id="pill-citations"><strong>0</strong> Citations</span>
+        </div>
+      </div>
+
+      <!-- Partial Scan Warning -->
+      <div id="warning-partial-scan" class="warning-banner hidden" role="alert">
+        <div class="warning-header">
+          <span class="warning-icon">⚠️</span>
+          <strong>Partial Scan Detected</strong>
+        </div>
+        <p id="warning-partial-desc" class="warning-desc">
+          Some earlier turns could not be verified. You can export captured turns or retry.
+        </p>
+        <button id="btn-rescan-partial" class="btn btn-secondary btn-mini" type="button">🔄 Retry Full Scan</button>
+      </div>
+
+      <!-- Turn Selection & Filter Drawer -->
+      <details id="turn-filter-drawer" class="accordion-drawer" open>
+        <summary class="drawer-summary">
+          <div class="drawer-title">
+            <span>🎯 Select Inquiry Turns</span>
+            <span id="turn-selection-count" class="badge-count">0/0</span>
+          </div>
+          <span class="drawer-arrow">▾</span>
+        </summary>
+        <div class="drawer-content">
+          <div class="filter-actions">
+            <button id="btn-select-all-turns" type="button" class="btn-text-action">Select All</button>
+            <span class="action-divider">&bull;</span>
+            <button id="btn-clear-all-turns" type="button" class="btn-text-action">Clear All</button>
+          </div>
+          <div id="turn-list" class="turn-list" role="group" aria-label="Turn Selection">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+      </details>
+
+      <!-- Format Selection -->
+      <fieldset class="format-fieldset">
+        <legend class="format-legend">Export Destination &amp; Format</legend>
+        <div class="format-options">
+          <label class="format-option" for="format-md">
+            <input type="radio" id="format-md" name="export-format" value="md" checked>
+            <div class="format-text">
+              <span class="format-name">📝 Obsidian Markdown (.md)</span>
+              <span class="format-desc">GFM footnotes &amp; bibliography with YAML frontmatter</span>
+            </div>
+          </label>
+
+          <label class="format-option" for="format-html">
+            <input type="radio" id="format-html" name="export-format" value="html">
+            <div class="format-text">
+              <span class="format-name">📄 Print-Ready View (.html / PDF)</span>
+              <span class="format-desc">Publication serif styling with instant Print-to-PDF</span>
+            </div>
+          </label>
+
+          <label class="format-option" for="format-zip">
+            <input type="radio" id="format-zip" name="export-format" value="zip">
+            <div class="format-text">
+              <div class="format-title-row">
+                <span class="format-name">📦 Complete Research Archive (.zip)</span>
+                <span class="badge-count">Archive</span>
+              </div>
+              <span class="format-desc">Bundles Markdown, Print HTML, Bibliography &amp; Studio Notes</span>
+            </div>
+          </label>
+        </div>
+      </fieldset>
+
+      <!-- Obsidian Frontmatter Settings Drawer -->
+      <details id="frontmatter-drawer" class="accordion-drawer">
+        <summary class="drawer-summary">
+          <div class="drawer-title">
+            <span>⚙️ Obsidian Frontmatter</span>
+            <span id="fm-status-badge" class="badge-count">Active</span>
+          </div>
+          <span class="drawer-arrow">▾</span>
+        </summary>
+        <div class="drawer-content form-fields">
+          <label class="checkbox-row" for="chk-fm-enabled">
+            <input type="checkbox" id="chk-fm-enabled" checked>
+            <span class="checkbox-label">Include YAML Frontmatter (Obsidian / Logseq)</span>
+          </label>
+          <div id="fm-fields-group" class="fm-fields-group">
+            <label class="field-label" for="input-fm-tags">
+              <span class="label-text">Tags (comma-separated):</span>
+              <input type="text" id="input-fm-tags" value="gemini-notebook, research" class="text-input" placeholder="e.g. thesis, ai, research">
+            </label>
+            <label class="checkbox-row" for="chk-fm-aliases">
+              <input type="checkbox" id="chk-fm-aliases" checked>
+              <span class="checkbox-label">Include notebook title as alias</span>
+            </label>
+            <label class="checkbox-row" for="chk-fm-metrics">
+              <input type="checkbox" id="chk-fm-metrics" checked>
+              <span class="checkbox-label">Include quantitative counts (turns &amp; sources)</span>
+            </label>
+          </div>
+        </div>
+      </details>
+
+      <!-- Selection Validation Warning (shown if 0 turns selected) -->
+      <div id="warning-zero-turns" class="warning-banner hidden" role="alert">
+        <span class="warning-icon">⚠️</span>
+        <span class="warning-desc">Select at least one inquiry turn above to export.</span>
+      </div>
+
+      <!-- Primary Action -->
+      <button id="btn-export" class="btn btn-primary btn-large">
+        <span class="btn-text">Export Research</span>
+        <span class="btn-subtext">Direct local download &bull; Zero cloud hop</span>
+      </button>
+
+      <!-- Secondary Action: Quick Copy -->
+      <button id="btn-copy" class="btn btn-secondary btn-copy" type="button">
+        <span id="btn-copy-label">📋 Copy to Clipboard</span>
+      </button>
+      <div id="copy-toast" class="copy-toast hidden" aria-live="polite">✓ Copied to clipboard!</div>
+    </section>
+
+    <!-- State 5: Success -->
+    <section id="state-success" class="state-view hidden" aria-live="polite">
+      <div class="card success-card">
+        <span class="state-icon">✅</span>
+        <h2>Export Complete!</h2>
+        <p id="success-filename" class="success-file">Downloaded to your Downloads folder.</p>
+        <button id="btn-export-another" class="btn btn-secondary">Export Again</button>
+      </div>
+    </section>
+
+    <!-- State 6: Error -->
+    <section id="state-error" class="state-view hidden" aria-live="assertive">
+      <div class="card error-card">
+        <span class="state-icon">⚠️</span>
+        <h2>Extraction Error</h2>
+        <p id="error-message">Unable to parse notebook structure.</p>
+        <button id="btn-retry" class="btn btn-secondary">Retry Scan</button>
+        <button id="btn-force-error" class="btn btn-primary" style="margin-top: 8px;">🔍 Deep Scan / Force Extract</button>
+      </div>
+    </section>
+
+    <!-- Live Diagnostics Drawer -->
+    <details id="diag-drawer" class="diag-drawer" style="margin-top: 14px;">
+      <summary class="diag-summary" style="font-size: 11px; cursor: pointer; color: var(--text-muted);">⚙️ Troubleshooting / Diagnostic Log</summary>
+      <pre id="diag-pre" class="diag-pre" style="font-size: 10px; background: #f8fafc; border: 1px solid var(--border); padding: 6px; border-radius: 4px; max-height: 120px; overflow-y: auto; margin-top: 6px; white-space: pre-wrap;">Initializing CiteMark...</pre>
+    </details>
+
+    <!-- Footer Note -->
+    <footer class="app-footer">
+      <span>CiteMark v0.1.0 &bull; Private &amp; Open</span>
+    </footer>
+  </div>
+
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>
