@@ -19,3 +19,14 @@ yarn-error.log*
 # OS files
 .DS_Store
 Thumbs.db
+
+# Internal agent scaffolding & prompts
+.claude/
+.agents/
+prompts/
+skills-lock.json
+setup.ps1
+README_SETUP.md
+CLAUDE.md
+AGENTS.md
+

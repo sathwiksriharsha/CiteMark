@@ -7,6 +7,7 @@
     "dev": "wxt",
     "build": "wxt build",
     "zip": "wxt zip",
+    "zip:edge": "wxt zip -b edge",
     "compile": "wxt prepare",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
